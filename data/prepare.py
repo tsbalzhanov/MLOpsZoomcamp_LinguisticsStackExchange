@@ -11,6 +11,8 @@ from common import (
     TARGET_COLUMN, DatasetSplit, StackExchangeDataset, StackExchangePool, prepare_output_dir, set_up_logger
 )
 
+from .data_common import get_raw_data_dir
+
 
 logger = logging.getLogger(__name__)
 
@@ -178,7 +180,7 @@ def prepare_dataset(
     root_data_dir: pathlib.Path, random_seed: int, validation_size: float, test_size: float, overwrite: bool = False
 ) -> None:
     set_up_logger(logger)
-    raw_data_dir = root_data_dir / 'raw_data'
+    raw_data_dir = get_raw_data_dir(root_data_dir)
     assert raw_data_dir.exists()
     dataset_dir = root_data_dir / 'dataset'
     prepare_output_dir(dataset_dir, overwrite, logger)

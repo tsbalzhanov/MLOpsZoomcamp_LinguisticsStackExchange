@@ -1,7 +1,7 @@
 [project]
 name = "mlopszoomcamp-linguisticsstackexchange"
 version = "0.1.0"
-description = "Add your description here"
+description = "Linguistics Stack Exchange project for MLOps Zoomcamp"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -10,6 +10,8 @@ dependencies = [
     "lightgbm==4.6.0",
     "lxml>=6.0.0",
     "mlflow>=3.1.4",
+    "mlserver>=1.7.1",
+    "mlserver-lightgbm>=1.7.1",
     "pandas>=2.3.1",
     "patool>=4.0.1",
     "prefect>=3.4.10",
@@ -22,6 +24,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "colorama>=0.4.6",
+    "ipython>=9.4.0",
     "isort>=6.0.1",
     "mypy>=1.17.0",
     "pandas-stubs>=2.3.0.250703",

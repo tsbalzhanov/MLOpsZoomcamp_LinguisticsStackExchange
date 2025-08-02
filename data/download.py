@@ -9,6 +9,8 @@ import tqdm
 
 from common import prepare_output_dir, set_up_logger
 
+from .data_common import get_raw_data_dir
+
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +40,6 @@ def download_and_unpack_archive(community: str, root_data_dir: pathlib.Path, ove
     set_up_logger(logger)
     dir_permissions = 0o700
     root_data_dir.mkdir(dir_permissions, parents=True, exist_ok=True)
-    raw_data_dir = root_data_dir / 'raw_data'
+    raw_data_dir = get_raw_data_dir(root_data_dir)
     prepare_output_dir(raw_data_dir, overwrite, logger)
     download_and_unpack_archive_inner(_get_download_url(community), raw_data_dir)

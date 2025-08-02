@@ -1,14 +1,15 @@
 import prefect
 
 from data import download_and_unpack_archive, prepare_dataset
-from train_model import train_model
+from model import prepare_serving_config, train_model
 
 
 def main() -> None:
     prefect.serve(
-        download_and_unpack_archive.to_deployment('download-and-unpack_archive'),
-        prepare_dataset.to_deployment('prepare-dataset'),
-        train_model.to_deployment('train-model')
+        download_and_unpack_archive.to_deployment('download-and-unpack-archive'),  # type: ignore[arg-type]
+        prepare_dataset.to_deployment('prepare-dataset'),  # type: ignore[arg-type]
+        train_model.to_deployment('train-model'),  # type: ignore[arg-type]
+        prepare_serving_config.to_deployment('prepare-serving-config')  # type: ignore[arg-type]
     )
 
 

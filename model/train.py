@@ -4,6 +4,7 @@ import pathlib
 import lightgbm
 import mlflow
 import mlflow.entities
+import mlflow.entities.model_registry
 import mlflow.lightgbm
 import numpy as np
 import pandas as pd
@@ -61,19 +62,38 @@ def train_model_inner(dataset: StackExchangeDataset, random_seed: int) -> mlflow
     with mlflow.start_run() as mlflow_run:
         model = lightgbm.train(training_params, train_pool, valid_sets=[validation_pool])
         test_metrics = _calculate_binary_classification_metrics(
-            dataset[DatasetSplit.TEST].target, model.predict(dataset[DatasetSplit.TEST].features)  # type: ignore[arg-type]
+            dataset[DatasetSplit.TEST].target,
+            model.predict(dataset[DatasetSplit.TEST].features)  # type: ignore[arg-type]
         )
         mlflow.log_metrics(test_metrics)
         logger.info(f'Test metrics: {test_metrics}')
         return mlflow_run
 
 
+@prefect.task
+def register_model(
+    mlflow_run: mlflow.entities.Run, model_name: str, model_alias: str
+) -> mlflow.entities.model_registry.ModelVersion:
+    model_uri = f'runs:/{mlflow_run.info.run_id}/model'
+    model_version = mlflow.register_model(model_uri, model_name)
+    mlflow_client = mlflow.MlflowClient()
+    mlflow_client.set_registered_model_alias(model_name, model_alias, model_version.version)
+    return model_version
+
+
 @prefect.flow
-def train_model(root_data_dir: pathlib.Path, random_seed: int, mlflow_tracking_uri: str) -> None:
+def train_model(
+    root_data_dir: pathlib.Path, mlflow_tracking_uri: str, model_name: str, model_alias: str, random_seed: int
+) -> None:
     set_up_logger(logger)
-    mlflow.set_tracking_uri(uri=mlflow_tracking_uri)
+    mlflow.set_tracking_uri(mlflow_tracking_uri)
 
     dataset_dir = root_data_dir / 'dataset'
     dataset = load_dataset(dataset_dir)
     mlflow_run = train_model_inner(dataset, random_seed)
     logger.info(f'run_id: {mlflow_run.info.run_id}')
+
+    model_version = register_model(mlflow_run, model_name, model_alias)
+    logger.info(
+        f'model_version: name: {model_version.name} version: {model_version.version} aliases: {model_version.aliases}'
+    )
