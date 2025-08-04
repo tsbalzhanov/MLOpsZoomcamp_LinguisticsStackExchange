@@ -6,12 +6,11 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "beautifulsoup4>=4.13.4",
-    # "click>=8.2.1",
     "lightgbm==4.6.0",
     "lxml>=6.0.0",
     "mlflow>=3.1.4",
-    "mlserver>=1.7.1",
-    "mlserver-lightgbm>=1.7.1",
+    # "mlserver>=1.7.1",
+    # "mlserver-lightgbm>=1.7.1",
     "pandas>=2.3.1",
     "patool>=4.0.1",
     "prefect>=3.4.10",

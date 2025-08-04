@@ -1,4 +1,3 @@
-# Python-generated files
 __pycache__/
 *.py[oc]
 build/
@@ -6,11 +5,11 @@ dist/
 wheels/
 *.egg-info
 
+.vscode/
+.venv/
+
 .mypy_cache/
 .ruff_cache/
-
-# Virtual environments
-.venv
 
 # Other
 work_data/

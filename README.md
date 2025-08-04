@@ -38,3 +38,9 @@ uv run prefect deployment run "prepare-serving-config/prepare-serving-config" -p
 ```shell
 uv run mlserver start work_data/mlserver
 ```
+
+# Run linter, isort & type checker
+
+```shell
+uv run ruff check && uv run isort --check --diff . && uv run mypy .
+```

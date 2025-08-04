@@ -1,0 +1,75 @@
+services:
+  prefect-db:
+    image: postgres:17
+    restart: always
+    environment:
+      POSTGRES_USER: prefect
+      POSTGRES_PASSWORD: prefect
+      POSTGRES_DB: prefect
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  prefect-server:
+    image: prefecthq/prefect:3.4.11-python3.12
+    restart: always
+    command: prefect server start
+    ports:
+      - 18900:18900
+    depends_on:
+      - prefect-db
+    environment:
+      PREFECT_SERVER_API_HOST: 0.0.0.0
+      PREFECT_SERVER_API_PORT: 18900
+      PREFECT_SERVER_DATABASE_CONNECTION_URL: 'postgresql+asyncpg://prefect:prefect@prefect-db:5432/prefect'
+
+  mlflow-server:
+    image: ghcr.io/mlflow/mlflow:v3.1.4
+    restart: always
+    working_dir: /workspace/data-storage
+    command: mlflow server --host 0.0.0.0 --port 18901 --backend-store-uri "sqlite:///store.db" --default-artifact-root artifacts
+    ports:
+      - 18901:18901
+    volumes:
+      - workers-data-storage:/workspace/data-storage
+
+  runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    restart: always
+    command: uv run python main.py
+    environment:
+      PREFECT_API_URL: http://prefect-server:18900/api
+      PREFECT_LOCAL_STORAGE_PATH: /workspace/prefect-task-storage
+      MLFLOW_TRACKING_URI: http://mlflow-server:18901
+      PYTHONPATH: /workspace/src
+      DATA_DIR: /workspace/data-storage
+      MLSERVER_DATA_DIR: /workspace/mlserver-data-storage
+      RANDOM_SEED: 63
+    depends_on:
+      prefect-server:
+        condition: service_started
+      mlflow-server:
+        condition: service_started
+    volumes:
+      - prefect-task-storage:/workspace/prefect-task-storage
+      - workers-data-storage:/workspace/data-storage
+      - mlserver-data-storage:/workspace/mlserver-data-storage
+
+  mlserver:
+    image: seldonio/mlserver:1.7.1-lightgbm
+    restart: always
+    ports:
+      - 18910:8080
+      - 18911:8081
+      - 18912:8082
+    volumes:
+      - mlserver-data-storage:/mnt/models:ro
+
+volumes:
+  postgres-data: {}
+  prefect-task-storage: {}
+  mlflow-data-storage: {}
+  workers-data-storage: {}
+  mlserver-data-storage: {}

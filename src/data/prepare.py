@@ -8,7 +8,8 @@ import prefect
 import sklearn.model_selection as sk_model_selection  # type: ignore[import-untyped]
 
 from common import (
-    TARGET_COLUMN, DatasetSplit, StackExchangeDataset, StackExchangePool, prepare_output_dir, set_up_logger
+    TARGET_COLUMN, DatasetSplit, StackExchangeDataset, StackExchangePool,
+    get_dataset_dir, get_random_seed, prepare_output_dir, set_up_logger
 )
 
 from .data_common import get_raw_data_dir
@@ -132,10 +133,9 @@ def _extract_target(posts_df: pd.DataFrame) -> StackExchangePool:
 
 @prefect.task
 def prepare_dataset_inner(
-    data_dir: pathlib.Path, validation_size: float, test_size: float, random_seed: int
+    data_dir: pathlib.Path, validation_size: float, test_size: float,
 ) -> dict[DatasetSplit, StackExchangePool]:
-    set_up_logger(logger)
-
+    random_seed = get_random_seed()
     logger.info('Preparing data for training')
     users_df = _prepare_users_df(_load_users_df(data_dir))
     all_posts_df = _load_all_posts_df(data_dir)
@@ -176,13 +176,9 @@ def save_dataset(dataset: StackExchangeDataset, dataset_dir: pathlib.Path) -> No
 
 
 @prefect.flow
-def prepare_dataset(
-    root_data_dir: pathlib.Path, random_seed: int, validation_size: float, test_size: float, overwrite: bool = False
-) -> None:
+def prepare_dataset(validation_size: float, test_size: float, overwrite: bool = False) -> None:
     set_up_logger(logger)
-    raw_data_dir = get_raw_data_dir(root_data_dir)
-    assert raw_data_dir.exists()
-    dataset_dir = root_data_dir / 'dataset'
+    dataset_dir = get_dataset_dir()
     prepare_output_dir(dataset_dir, overwrite, logger)
-    dataset = prepare_dataset_inner(raw_data_dir, validation_size, test_size, random_seed)
+    dataset = prepare_dataset_inner(get_raw_data_dir(), validation_size, test_size)
     save_dataset(dataset, dataset_dir)

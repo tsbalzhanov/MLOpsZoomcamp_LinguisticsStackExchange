@@ -11,7 +11,10 @@ import pandas as pd
 import prefect
 import sklearn.metrics as sk_metrics  # type: ignore[import-untyped]
 
-from common import TARGET_COLUMN, DatasetSplit, StackExchangeDataset, StackExchangePool, set_up_logger
+from common import (
+    TARGET_COLUMN, DatasetSplit, StackExchangeDataset,
+    StackExchangePool, get_dataset_dir, get_random_seed, set_up_logger
+)
 
 
 logger = logging.getLogger(__name__)
@@ -46,8 +49,9 @@ def load_dataset(dataset_dir: pathlib.Path) -> StackExchangeDataset:
 
 
 @prefect.task
-def train_model_inner(dataset: StackExchangeDataset, random_seed: int) -> mlflow.entities.Run:
+def train_model_inner(dataset: StackExchangeDataset) -> mlflow.entities.Run:
     logger.info('Training LightGBM model')
+    random_seed = get_random_seed()
     mlflow.lightgbm.autolog()
     train_pool = lightgbm.Dataset(dataset[DatasetSplit.TRAIN].features, dataset[DatasetSplit.TRAIN].target)
     validation_pool = lightgbm.Dataset(
@@ -82,15 +86,12 @@ def register_model(
 
 
 @prefect.flow
-def train_model(
-    root_data_dir: pathlib.Path, mlflow_tracking_uri: str, model_name: str, model_alias: str, random_seed: int
-) -> None:
+def train_model(model_name: str, model_alias: str) -> None:
     set_up_logger(logger)
-    mlflow.set_tracking_uri(mlflow_tracking_uri)
 
-    dataset_dir = root_data_dir / 'dataset'
+    dataset_dir = get_dataset_dir()
     dataset = load_dataset(dataset_dir)
-    mlflow_run = train_model_inner(dataset, random_seed)
+    mlflow_run = train_model_inner(dataset)
     logger.info(f'run_id: {mlflow_run.info.run_id}')
 
     model_version = register_model(mlflow_run, model_name, model_alias)

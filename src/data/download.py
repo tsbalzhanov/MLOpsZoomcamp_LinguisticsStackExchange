@@ -36,10 +36,8 @@ def download_and_unpack_archive_inner(url: str, output_dir_path: pathlib.Path | 
 
 
 @prefect.flow
-def download_and_unpack_archive(community: str, root_data_dir: pathlib.Path, overwrite: bool = False) -> None:
+def download_and_unpack_archive(community: str, overwrite: bool = False) -> None:
     set_up_logger(logger)
-    dir_permissions = 0o700
-    root_data_dir.mkdir(dir_permissions, parents=True, exist_ok=True)
-    raw_data_dir = get_raw_data_dir(root_data_dir)
+    raw_data_dir = get_raw_data_dir()
     prepare_output_dir(raw_data_dir, overwrite, logger)
     download_and_unpack_archive_inner(_get_download_url(community), raw_data_dir)
