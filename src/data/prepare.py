@@ -8,7 +8,7 @@ import prefect
 import sklearn.model_selection as sk_model_selection  # type: ignore[import-untyped]
 
 from common import (
-    TARGET_COLUMN, DatasetSplit, StackExchangeDataset, StackExchangePool,
+    TARGET_COLUMN, DatasetSplit, StackExchangeDataset, StackExchangeSplits,
     get_dataset_dir, get_random_seed, prepare_output_dir, set_up_logger
 )
 
@@ -124,8 +124,8 @@ def _prepare_posts_df(all_posts_df: pd.DataFrame) -> pd.DataFrame:
     return posts_df.drop(columns=['accepted_answer_id', 'title', 'body', 'tags', 'parent_id'])
 
 
-def _extract_target(posts_df: pd.DataFrame) -> StackExchangePool:
-    return StackExchangePool(
+def _extract_target(posts_df: pd.DataFrame) -> StackExchangeSplits:
+    return StackExchangeSplits(
         posts_df.drop(columns=[TARGET_COLUMN]).astype(pd.Float32Dtype()),
         posts_df[TARGET_COLUMN]
     )
@@ -134,7 +134,7 @@ def _extract_target(posts_df: pd.DataFrame) -> StackExchangePool:
 @prefect.task
 def prepare_dataset_inner(
     data_dir: pathlib.Path, validation_size: float, test_size: float,
-) -> dict[DatasetSplit, StackExchangePool]:
+) -> dict[DatasetSplit, StackExchangeSplits]:
     random_seed = get_random_seed()
     logger.info('Preparing data for training')
     users_df = _prepare_users_df(_load_users_df(data_dir))
@@ -170,9 +170,9 @@ def prepare_dataset_inner(
 
 @prefect.task
 def save_dataset(dataset: StackExchangeDataset, dataset_dir: pathlib.Path) -> None:
-    for split, pool in dataset.items():
-        pool.features.to_parquet(dataset_dir / f'{split}_features.parquet')
-        pool.target.to_frame().to_parquet(dataset_dir / f'{split}_target.parquet')
+    for name, split in dataset.items():
+        split.features.to_parquet(dataset_dir / f'{name}_features.parquet')
+        split.target.to_frame().to_parquet(dataset_dir / f'{name}_target.parquet')
 
 
 @prefect.flow

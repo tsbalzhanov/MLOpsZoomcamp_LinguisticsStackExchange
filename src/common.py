@@ -52,7 +52,7 @@ def prepare_output_dir(output_dir: pathlib.Path, overwrite: bool, logger: loggin
 
 
 @dataclasses.dataclass
-class StackExchangePool:
+class StackExchangeSplits:
     features: pd.DataFrame
     target: pd.Series
 
@@ -63,4 +63,4 @@ class DatasetSplit(enum.StrEnum):
     TEST = enum.auto()
 
 
-StackExchangeDataset = dict[DatasetSplit, StackExchangePool]
+StackExchangeDataset = dict[DatasetSplit, StackExchangeSplits]

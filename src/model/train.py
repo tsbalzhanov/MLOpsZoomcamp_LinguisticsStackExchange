@@ -13,7 +13,7 @@ import sklearn.metrics as sk_metrics  # type: ignore[import-untyped]
 
 from common import (
     TARGET_COLUMN, DatasetSplit, StackExchangeDataset,
-    StackExchangePool, get_dataset_dir, get_random_seed, set_up_logger
+    StackExchangeSplits, get_dataset_dir, get_random_seed, set_up_logger
 )
 
 
@@ -40,7 +40,7 @@ def _calculate_binary_classification_metrics(
 @prefect.task
 def load_dataset(dataset_dir: pathlib.Path) -> StackExchangeDataset:
     return {
-        split: StackExchangePool(
+        split: StackExchangeSplits(
             pd.read_parquet(dataset_dir / f'{split}_features.parquet'),
             pd.read_parquet(dataset_dir / f'{split}_target.parquet')[TARGET_COLUMN]
         )
@@ -53,9 +53,9 @@ def train_model_inner(dataset: StackExchangeDataset) -> mlflow.entities.Run:
     logger.info('Training LightGBM model')
     random_seed = get_random_seed()
     mlflow.lightgbm.autolog()
-    train_pool = lightgbm.Dataset(dataset[DatasetSplit.TRAIN].features, dataset[DatasetSplit.TRAIN].target)
-    validation_pool = lightgbm.Dataset(
-        dataset[DatasetSplit.VALIDATION].features, dataset[DatasetSplit.VALIDATION].target, reference=train_pool
+    train_split = lightgbm.Dataset(dataset[DatasetSplit.TRAIN].features, dataset[DatasetSplit.TRAIN].target)
+    validation_split = lightgbm.Dataset(
+        dataset[DatasetSplit.VALIDATION].features, dataset[DatasetSplit.VALIDATION].target, reference=train_split
     )
     training_params = {
         'objective': 'binary',
@@ -64,7 +64,7 @@ def train_model_inner(dataset: StackExchangeDataset) -> mlflow.entities.Run:
         'seed': random_seed
     }
     with mlflow.start_run() as mlflow_run:
-        model = lightgbm.train(training_params, train_pool, valid_sets=[validation_pool])
+        model = lightgbm.train(training_params, train_split, valid_sets=[validation_split])
         test_metrics = _calculate_binary_classification_metrics(
             dataset[DatasetSplit.TEST].target,
             model.predict(dataset[DatasetSplit.TEST].features)  # type: ignore[arg-type]
